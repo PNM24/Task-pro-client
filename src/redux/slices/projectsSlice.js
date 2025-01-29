@@ -9,7 +9,7 @@ export const createProject = createAsyncThunk(
     try {
       const state = thunkAPI.getState();
       const token = state.auth.token;
-      const response = await axios.post('/api/boards', projectData, {
+      const response = await axios.post('/tasks/board', projectData, {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success('Project created successfully');
@@ -28,7 +28,7 @@ export const fetchUserProjects = createAsyncThunk(
     try {
       const state = thunkAPI.getState();
       const token = state.auth.token;
-      const response = await axios.get('/api/boards', {
+      const response = await axios.get('/tasks/board', {
         headers: { Authorization: `Bearer ${token}` },
       });
       return response.data;
@@ -46,7 +46,7 @@ export const updateProject = createAsyncThunk(
       const state = thunkAPI.getState();
       const token = state.auth.token;
       const response = await axios.patch(
-        `/api/boards/${projectData.id}`,
+        `/tasks/board/${projectData.id}`,
         projectData,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -72,7 +72,7 @@ export const deleteProject = createAsyncThunk(
     try {
       const state = thunkAPI.getState();
       const token = state.auth.token;
-      await axios.delete(`/api/boards/${projectId}`, {
+      await axios.delete(`/tasks/board/${projectId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success('Project deleted successfully');
