@@ -1,19 +1,25 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-// Fetch all columns (requires boardId in payload, backend does not yet support fetching columns by boardId)
+// Fetch all columns and filter by boardId
 export const fetchColumns = createAsyncThunk(
   'columns/fetchColumns',
-  async (_, thunkAPI) => {
+  async (boardId, thunkAPI) => {
     try {
       const state = thunkAPI.getState();
       const token = state.auth.token;
-      const response = await axios.get(`/api/tasks/columns`, {
+      const response = await axios.get('/tasks', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      return response.data;
+
+      // Filtrare locală a coloanelor după boardId
+      const filteredColumns = response.data.columns.filter(
+        column => column.boardId === boardId
+      );
+
+      return filteredColumns;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
+      return thunkAPI.rejectWithValue(error.response?.data || 'Fetch failed');
     }
   }
 );
@@ -21,16 +27,20 @@ export const fetchColumns = createAsyncThunk(
 // Create a new column
 export const createColumn = createAsyncThunk(
   'columns/createColumn',
-  async (columnData, thunkAPI) => {
+  async ({ boardId, ...columnData }, thunkAPI) => {
     try {
       const state = thunkAPI.getState();
       const token = state.auth.token;
-      const response = await axios.post(`/api/tasks/columns`, columnData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.post(
+        '/tasks/columns',
+        { ...columnData, boardId }, // Trimitem boardId în body
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       return response.data;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
+      return thunkAPI.rejectWithValue(error.response?.data || 'Creation failed');
     }
   }
 );
@@ -42,12 +52,12 @@ export const deleteColumn = createAsyncThunk(
     try {
       const state = thunkAPI.getState();
       const token = state.auth.token;
-      await axios.delete(`/api/tasks/columns/${columnId}`, {
+      await axios.delete(`/tasks/columns/${columnId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return columnId;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
+      return thunkAPI.rejectWithValue(error.response?.data || 'Deletion failed');
     }
   }
 );
@@ -60,15 +70,15 @@ export const updateColumn = createAsyncThunk(
       const state = thunkAPI.getState();
       const token = state.auth.token;
       const response = await axios.patch(
-        `/api/tasks/columns`,
-        { columnId, newTitle },
+        '/tasks/columns',
+        { columnId, title: newTitle }, // Trimitem `columnId` și `title` în body
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
       return { columnId, newTitle: response.data.title };
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
+      return thunkAPI.rejectWithValue(error.response?.data || 'Update failed');
     }
   }
 );
@@ -76,13 +86,14 @@ export const updateColumn = createAsyncThunk(
 const columnsSlice = createSlice({
   name: 'columns',
   initialState: {
-    items: [], // Array of columns
+    items: [], // Array de coloane
     isLoading: false,
     error: null,
   },
   reducers: {},
   extraReducers: builder => {
     builder
+      // Fetch columns
       .addCase(fetchColumns.pending, state => {
         state.isLoading = true;
         state.error = null;
@@ -95,6 +106,8 @@ const columnsSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       })
+
+      // Create column
       .addCase(createColumn.pending, state => {
         state.isLoading = true;
         state.error = null;
@@ -107,6 +120,8 @@ const columnsSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       })
+
+      // Delete column
       .addCase(deleteColumn.pending, state => {
         state.isLoading = true;
         state.error = null;
@@ -119,6 +134,8 @@ const columnsSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       })
+
+      // Update column
       .addCase(updateColumn.pending, state => {
         state.isLoading = true;
         state.error = null;

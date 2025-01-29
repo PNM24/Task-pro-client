@@ -2,7 +2,28 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
-// Define async thunk for creating a new project
+// Fetch all user projects (boards)
+export const fetchUserProjects = createAsyncThunk(
+  'projects/fetchUserProjects',
+  async (_, thunkAPI) => {
+    try {
+      const state = thunkAPI.getState();
+      const token = state.auth.token;
+      const response = await axios.get('/tasks', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Filtrare doar pentru board-uri (proiecte)
+      const projects = response.data.boards;
+
+      return projects;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data || 'Fetch failed');
+    }
+  }
+);
+
+// Create a new project (board)
 export const createProject = createAsyncThunk(
   'projects/createProject',
   async (projectData, thunkAPI) => {
@@ -16,29 +37,12 @@ export const createProject = createAsyncThunk(
       return response.data;
     } catch (error) {
       toast.error('Failed to create project');
-      return thunkAPI.rejectWithValue(error.message);
+      return thunkAPI.rejectWithValue(error.response?.data || 'Creation failed');
     }
   }
 );
 
-// Define async thunk for fetching user projects
-export const fetchUserProjects = createAsyncThunk(
-  'projects/fetchUserProjects',
-  async (_, thunkAPI) => {
-    try {
-      const state = thunkAPI.getState();
-      const token = state.auth.token;
-      const response = await axios.get('/tasks/board', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return response.data;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
-    }
-  }
-);
-
-// Define async thunk for updating a project
+// Update a specific project (board)
 export const updateProject = createAsyncThunk(
   'projects/updateProject',
   async (projectData, thunkAPI) => {
@@ -60,12 +64,12 @@ export const updateProject = createAsyncThunk(
       return response.data;
     } catch (error) {
       toast.error('Failed to update project');
-      return thunkAPI.rejectWithValue(error.message);
+      return thunkAPI.rejectWithValue(error.response?.data || 'Update failed');
     }
   }
 );
 
-// Define async thunk for deleting a project
+// Delete a specific project (board)
 export const deleteProject = createAsyncThunk(
   'projects/deleteProject',
   async (projectId, thunkAPI) => {
@@ -79,7 +83,7 @@ export const deleteProject = createAsyncThunk(
       return projectId;
     } catch (error) {
       toast.error('Failed to delete project');
-      return thunkAPI.rejectWithValue(error.message);
+      return thunkAPI.rejectWithValue(error.response?.data || 'Deletion failed');
     }
   }
 );
@@ -99,7 +103,7 @@ export const setSelectedProject = createAsyncThunk(
 const projectsSlice = createSlice({
   name: 'projects',
   initialState: {
-    items: [],
+    items: [], // Array de proiecte
     isLoading: false,
     error: null,
     selectedProject: null,
@@ -107,6 +111,7 @@ const projectsSlice = createSlice({
   reducers: {},
   extraReducers: builder => {
     builder
+      // Fetch projects
       .addCase(fetchUserProjects.pending, state => {
         state.isLoading = true;
         state.error = null;
@@ -119,6 +124,8 @@ const projectsSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       })
+
+      // Create project
       .addCase(createProject.pending, state => {
         state.isLoading = true;
         state.error = null;
@@ -131,6 +138,8 @@ const projectsSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       })
+
+      // Update project
       .addCase(updateProject.pending, state => {
         state.isLoading = true;
         state.error = null;
@@ -148,6 +157,8 @@ const projectsSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       })
+
+      // Delete project
       .addCase(deleteProject.pending, state => {
         state.isLoading = true;
         state.error = null;
@@ -162,6 +173,8 @@ const projectsSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       })
+
+      // Set selected project
       .addCase(setSelectedProject.fulfilled, (state, action) => {
         state.selectedProject = action.payload;
       });
