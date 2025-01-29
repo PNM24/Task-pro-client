@@ -1,27 +1,30 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-// Fetch all cards for a specific column
+// Fetch all tasks (cards) and filter by boardId & columnId
 export const fetchCards = createAsyncThunk(
   'cards/fetchCards',
   async ({ boardId, columnId }, thunkAPI) => {
     try {
       const state = thunkAPI.getState();
       const token = state.auth.token;
-      const response = await axios.get(
-        `/api/cards/boards/${boardId}/columns/${columnId}/cards`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      const response = await axios.get('/tasks', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Filtrare locală pentru boardId și columnId
+      const filteredCards = response.data.tasks.filter(
+        task => task.boardId === boardId && task.columnId === columnId
       );
-      return response.data;
+
+      return filteredCards;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
+      return thunkAPI.rejectWithValue(error.response?.data || 'Fetch failed');
     }
   }
 );
 
-// Create a new card in a specific column
+// Create a new task (card) in a specific column
 export const createCard = createAsyncThunk(
   'cards/createCard',
   async ({ boardId, columnId, ...cardData }, thunkAPI) => {
@@ -29,56 +32,53 @@ export const createCard = createAsyncThunk(
       const state = thunkAPI.getState();
       const token = state.auth.token;
       const response = await axios.post(
-        `/api/cards/boards/${boardId}/columns/${columnId}/cards`,
-        cardData,
+        '/tasks/tasks',
+        { ...cardData, boardId, columnId }, // Trimitem boardId și columnId în body
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
       return response.data;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
+      return thunkAPI.rejectWithValue(error.response?.data || 'Creation failed');
     }
   }
 );
 
-// Update a specific card
+// Update a specific task (card)
 export const updateCard = createAsyncThunk(
   'cards/updateCard',
-  async ({ boardId, columnId, cardId, ...updatedCardData }, thunkAPI) => {
+  async ({ cardId, ...updatedCardData }, thunkAPI) => {
     try {
       const state = thunkAPI.getState();
       const token = state.auth.token;
       const response = await axios.patch(
-        `/api/cards/boards/${boardId}/columns/${columnId}/cards/${cardId}`,
-        updatedCardData,
+        '/tasks/tasks',
+        { taskId: cardId, ...updatedCardData }, // Trimitem taskId în body
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
       return response.data;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
+      return thunkAPI.rejectWithValue(error.response?.data || 'Update failed');
     }
   }
 );
 
-// Delete a specific card
+// Delete a specific task (card)
 export const deleteCard = createAsyncThunk(
   'cards/deleteCard',
-  async ({ boardId, columnId, cardId }, thunkAPI) => {
+  async ({ cardId }, thunkAPI) => {
     try {
       const state = thunkAPI.getState();
       const token = state.auth.token;
-      await axios.delete(
-        `/api/cards/boards/${boardId}/columns/${columnId}/cards/${cardId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await axios.delete(`/tasks/tasks/${cardId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       return cardId;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
+      return thunkAPI.rejectWithValue(error.response?.data || 'Deletion failed');
     }
   }
 );
