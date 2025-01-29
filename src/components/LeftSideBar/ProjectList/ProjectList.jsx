@@ -9,7 +9,7 @@ import StyledEditBoard from '../../EditBoard/EditBoard.styled';
 
 const ProjectList = () => {
   const dispatch = useDispatch();
-  const projects = useSelector(state => state.projects.items);
+  const projects = useSelector(state => state.projects.items) || []; // Adăugat fallback
   const isLoading = useSelector(state => state.projects.isLoading);
   const error = useSelector(state => state.projects.error);
 
@@ -17,11 +17,16 @@ const ProjectList = () => {
   const [currentProject, setCurrentProject] = useState(null);
 
   useEffect(() => {
-    dispatch(fetchUserProjects());
+    console.log("Fetching user projects...");
+    dispatch(fetchUserProjects()).then(response => {
+      console.log("Fetched projects:", response.payload);
+    }).catch(error => {
+      console.error("Error fetching projects:", error);
+    });
   }, [dispatch]);
 
   const handleEdit = (project) => {
-    console.log('Project to edit:', project); // Adăugat console.log
+    console.log('Project to edit:', project);
     setCurrentProject(project);
     setIsEditBoardOpen(true);
   };
@@ -41,16 +46,20 @@ const ProjectList = () => {
 
   return (
     <div>
-      <ul>
-        {projects.map(project => (
-          <ProjectListItem
-            key={project._id}
-            project={project}
-            onEdit={handleEdit}
-            onDelete={id => dispatch(deleteProject(id))}
-          />
-        ))}
-      </ul>
+      {projects.length === 0 ? (
+        <p>No projects available.</p>
+      ) : (
+        <ul>
+          {projects.map(project => (
+            <ProjectListItem
+              key={project._id}
+              project={project}
+              onEdit={handleEdit}
+              onDelete={id => dispatch(deleteProject(id))}
+            />
+          ))}
+        </ul>
+      )}
       {isEditBoardOpen && (
         <StyledEditBoard
           isOpen={isEditBoardOpen}

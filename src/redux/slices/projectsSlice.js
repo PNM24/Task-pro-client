@@ -13,11 +13,13 @@ export const fetchUserProjects = createAsyncThunk(
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // Filtrare doar pentru board-uri (proiecte)
-      const projects = response.data.boards;
+      console.log("Fetched projects response:", response.data); // Debugging
 
+      // Filtrare doar pentru board-uri (proiecte)
+      const projects = response.data.boards || []; // Evită 'undefined'
       return projects;
     } catch (error) {
+      console.error("Fetch projects error:", error.response?.data || error.message);
       return thunkAPI.rejectWithValue(error.response?.data || 'Fetch failed');
     }
   }
@@ -33,9 +35,13 @@ export const createProject = createAsyncThunk(
       const response = await axios.post('/tasks/board', projectData, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      console.log("Created project response:", response.data); // Debugging
+
       toast.success('Project created successfully');
-      return response.data;
+      return response.data.data; // Returnăm doar `data`
     } catch (error) {
+      console.error("Create project error:", error.response?.data || error.message);
       toast.error('Failed to create project');
       return thunkAPI.rejectWithValue(error.response?.data || 'Creation failed');
     }
@@ -56,13 +62,16 @@ export const updateProject = createAsyncThunk(
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+
+      console.log("Updated project response:", response.data); // Debugging
+
       toast.success('Project updated successfully');
 
-      // Set the updated project as selected project
-      thunkAPI.dispatch(setSelectedProject(response.data));
+      thunkAPI.dispatch(setSelectedProject(response.data.data));
 
-      return response.data;
+      return response.data.data; // Returnăm doar `data`
     } catch (error) {
+      console.error("Update project error:", error.response?.data || error.message);
       toast.error('Failed to update project');
       return thunkAPI.rejectWithValue(error.response?.data || 'Update failed');
     }
@@ -79,9 +88,13 @@ export const deleteProject = createAsyncThunk(
       await axios.delete(`/tasks/board/${projectId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      console.log("Deleted project ID:", projectId); // Debugging
+
       toast.success('Project deleted successfully');
-      return projectId;
+      return projectId; // Returnăm doar `projectId`
     } catch (error) {
+      console.error("Delete project error:", error.response?.data || error.message);
       toast.error('Failed to delete project');
       return thunkAPI.rejectWithValue(error.response?.data || 'Deletion failed');
     }
@@ -132,7 +145,9 @@ const projectsSlice = createSlice({
       })
       .addCase(createProject.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.items.push(action.payload);
+        if (action.payload) {
+          state.items.push(action.payload);
+        }
       })
       .addCase(createProject.rejected, (state, action) => {
         state.isLoading = false;
@@ -147,9 +162,9 @@ const projectsSlice = createSlice({
       .addCase(updateProject.fulfilled, (state, action) => {
         state.isLoading = false;
         const index = state.items.findIndex(
-          project => project._id === action.payload._id
+          project => project._id === action.payload?._id
         );
-        if (index !== -1) {
+        if (index !== -1 && action.payload) {
           state.items[index] = action.payload;
         }
       })

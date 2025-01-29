@@ -7,71 +7,50 @@ import { backgroundImages } from '../../assets/images/background_icons/index.js'
 import { GreenButton } from '../common/FormButton/FormButton.styled.js';
 
 const NewBoard = ({
-  className,
+  className = '',
   isOpen = true,
-  onClose = () => console.log('Close function not implemented yet'),
-  onCreate = () => console.log('Create function not implemented yet'),
+  onClose,
+  onCreate,
 }) => {
   const [selectedIcon, setSelectedIcon] = useState('icon-fourCircles');
-  const [selectedBackground, setSelectedBackground] = useState(
-    backgroundImages[0]
-  );
+  const [selectedBackground, setSelectedBackground] = useState(backgroundImages?.[0] || '');
 
   const validationSchema = Yup.object({
     title: Yup.string().required('Required *'),
   });
 
   const handleCreate = (values, { setSubmitting }) => {
-    if (values.title.trim() !== '') {
-      console.log('Creating board:', {
-        ...values,
-        icon: selectedIcon,
-        background: selectedBackground,
-      });
-      if (onCreate) {
-        onCreate({
-          ...values,
-          icon: selectedIcon,
-          background: selectedBackground,
-        });
-      }
-      if (onClose) {
-        onClose();
-      }
-    } else {
+    if (values.title.trim() === '') {
       setSubmitting(false);
+      return;
     }
-  };
 
-  const handleIconSelect = icon => {
-    setSelectedIcon(prevIcon =>
-      prevIcon === icon ? 'icon-fourCircles' : icon
-    );
-  };
+    const newBoardData = {
+      ...values,
+      icon: selectedIcon,
+      background: selectedBackground,
+    };
 
-  const handleBackgroundSelect = image => {
-    setSelectedBackground(prevImage =>
-      prevImage === image ? backgroundImages[0] : image
-    );
+    console.log('Creating board:', newBoardData);
+
+    onCreate?.(newBoardData);
+    onClose?.();
   };
 
   useEffect(() => {
     const handleKeyDown = event => {
       if (event.key === 'Escape') {
-        onClose();
+        onClose?.();
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
   const handleOverlayClick = event => {
     if (event.target.classList.contains('modal-overlay')) {
-      onClose();
+      onClose?.();
     }
   };
 
@@ -81,9 +60,9 @@ const NewBoard = ({
     <div className={`${className} modal-overlay`} onClick={handleOverlayClick}>
       <div className="modal-content">
         <h2>New board</h2>
-        <button className="close-button" onClick={onClose}>
+        <button className="close-button" onClick={() => onClose?.()}>
           <svg width="18" height="18">
-            <use href={`${sprite}#icon-closeBtn`}></use>
+            <use href={`${sprite}#icon-closeBtn`} />
           </svg>
         </button>
 
@@ -94,46 +73,35 @@ const NewBoard = ({
         >
           {({ isSubmitting, errors, touched }) => (
             <Form>
-              <div
-                className={`field ${
-                  touched.title && errors.title ? 'onError' : ''
-                }`}
-              >
+              <div className={`field ${touched.title && errors.title ? 'onError' : ''}`}>
                 <Field name="title" type="text" placeholder="Title" />
-                <div className="error">
-                  {touched.title && errors.title && <span>{errors.title}</span>}
-                </div>
+                {touched.title && errors.title && <div className="error">{errors.title}</div>}
               </div>
 
+              {/* Icons Selection */}
               <div className="icons-section">
                 <h3>Icons</h3>
                 <div className="icons-container">
                   {[
-                    'icon-fourCircles',
-                    'icon-star',
-                    'icon-loading',
-                    'icon-puzzlePiece',
-                    'icon-cube',
-                    'icon-lightning',
-                    'icon-threeCircles',
-                    'icon-hexagon',
+                    'icon-fourCircles', 'icon-star', 'icon-loading',
+                    'icon-puzzlePiece', 'icon-cube', 'icon-lightning',
+                    'icon-threeCircles', 'icon-hexagon'
                   ].map(icon => (
                     <button
                       key={icon}
                       type="button"
-                      className={`icon-button ${
-                        selectedIcon === icon ? 'selected' : ''
-                      }`}
-                      onClick={() => handleIconSelect(icon)}
+                      className={`icon-button ${selectedIcon === icon ? 'selected' : ''}`}
+                      onClick={() => setSelectedIcon(icon)}
                     >
                       <svg width="18" height="18">
-                        <use href={`${sprite}#${icon}`}></use>
+                        <use href={`${sprite}#${icon}`} />
                       </svg>
                     </button>
                   ))}
                 </div>
               </div>
 
+              {/* Background Selection */}
               <div className="backgrounds-section">
                 <h3>Background</h3>
                 <div className="backgrounds-container">
@@ -141,27 +109,27 @@ const NewBoard = ({
                     <img
                       key={index}
                       src={image}
-                      alt={`Fundal ${index}`}
+                      alt={`Background ${index}`}
                       className={selectedBackground === image ? 'selected' : ''}
-                      onClick={() => handleBackgroundSelect(image)}
+                      onClick={() => setSelectedBackground(image)}
                     />
                   ))}
                 </div>
               </div>
 
+              {/* Submit Button */}
               <GreenButton
                 type="submit"
                 text={
                   <>
                     <span className="plus-icon">
                       <svg width="28" height="28">
-                        <use href={`${sprite}#icon-plusWhite`}></use>
+                        <use href={`${sprite}#icon-plusWhite`} />
                       </svg>
                     </span>
                     Create
                   </>
                 }
-                handlerFunction={() => {}}
                 isDisabled={isSubmitting}
                 className="create-button"
               />
